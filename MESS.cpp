@@ -11,56 +11,55 @@
 #include <iomanip>
 using namespace std;
 
-struct Node {
-	int microgrid;
-	int time;
-	int chargeState;
-	bool isUsed;
-	vector<Node> linkedTo;
-
-	Node(int m_i, int t, int j, bool u) { //m_i = Microgrid i, t = time, j = charge state, u = used or not
-		microgrid = m_i;
-		time = t;
-		chargeState = j;
-		isUsed = u;
-	}
-	Node(int k) { //k = charging level
-		chargeState = k;
-	}
-};
-
 struct Microgrid {
-	Node n[4][2];
-	vector<vector<int> > edges;
-	int ID;
+	int currState;
+	int endState;
+	int costToStay[100];
 	int time;
-	Microgrid(int i, int t) {
+	int ID;
+	Microgrid(int i, int t, int curr) {
 		ID = i;
 		time = t;
-		for(int i = 0; i < 4; i++) {
-			vector<int> currEdges;
-			for(int j = 0; j < 2; j++) {
-				n[i][j] = new Node(ID, t, 1 - (i*0.25), j == 1);
-			}
-			for(int k = i; k < 4; k++) {
-					n[i][0].linkedTo.push_back(n[k][1]);
-					currEdges.push_back(0);
-			}
-			edges.push_back(currEdges);
+		currState = curr;
+		for(int i = 0; i <= currState; i++) {
+			costToStay[i] = (currState - i)*200; 
 		}
+		for(int i = currState + 1; i < 100; i++) costToStay[i] = INT_MAX;
+	}
+	Microgrid(int charge) {
+		ID = -1;
+		time = -1;
+		currState = charge;
+		endState = 100;
+		costToStay[currState] = (100-currState)*200;
 	}
 };
 
 struct Network {
-	Node source;
-	int numTimes; // number of days
-	int numMicros; // number of Microgrids
+	int numDays;
+	int numMicros;
+	map<Microgrid, map<Microgrid, int> > edgeCosts;
+	int transportCost;
 	Network(int t, int m) {
-		numTimes = t;
+		Microgrid B = new Microgrid(0, 0, 100);
+		B.endState = 100;
+		numDays = t;
 		numMicros = m;
-		source = new Node(-1, 0, 100, false);
-		for(int i = 0; i < numTimes; i++) {
-			
+		transportCost = 0;
+		map<Microgrid, int> bEdges;
+		for(int i = 1; i <= numMicros; i++) {
+			Microgrid newMicro = new Microgrid(i, 1, B.endState);
+			bEdges.insert(pair<Microgrid, int>(newMicro, transportCost));
+		}
+		edgeCosts.insert(pair<Microgrid, map<Microgrid, int> >(B, bEdges));
+		Microgrid currMicro = B;
+		map<Microgrid, int> currMicroEdges;
+		for(int i = 2; i <= numDays; i++) {
+			for(int j = 1; j <= numMicros; j++) {
+				Microgrid newMicro = new Microgrid(j, i, currMicro.endState);
+				currMicroEdges.insert(pair<Microgrid, int>(newMicro, transportCost));
+			}
+			edgeCosts.insert(pair<Microgrid, map<Microgrid, int> >(currMicro, currMicroEdges));
 		}
 	}
 };
