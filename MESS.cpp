@@ -11,7 +11,7 @@
 #include <iomanip>
 using namespace std;
 
-struct Microgrid {
+/*struct Microgrid {
 	int currState;
 	int endState;
 	int time;
@@ -45,7 +45,7 @@ struct Network {
 			edgeCosts.push_back(currEdges);
 		}
 	}
-};
+};*/
 
 vector<vector<vector<int> > > cheapestPath(int T, int M) {
 
@@ -62,7 +62,6 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 	}
 
 	int transportCost = 50;
-
 	vector<vector<vector<int> > > dpCUBE;
 
 	for(int i = 0; i < T; i++) {
@@ -77,13 +76,11 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 		dpCUBE.push_back(curr1);
 	}
 
-
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j += 25) {
 			dpCUBE[0][i][j] = costToStay(100, j);
 		}
 	}
-
 	
 	for(int i = 1; i < T; i++) {
 		for(int j = 1; j < M; j++) {
