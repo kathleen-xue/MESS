@@ -78,28 +78,28 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j += 25) {
-			dpCUBE[0][i][j] = costToStay(100, j);
+			dpCUBE[0][i][j] = costToStay(i, 0, 100, j);
 		}
 	}
 	
 	for(int i = 1; i < T; i++) {
-		for(int j = 1; j < M; j++) {
-			for(int k = 0; k <= 100; k += 25) {
-				for(int l = 0; l < M; l++) {
-					for(int m = 0; m <= 100; m += 25) {
-						for(int n = m; n <= 100; n += 25) {
-							dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
-								2*transportCost + costToStay(n, endCharges[i-1][l]));
-							if(n == m) {
-								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost));
-							}
-						}
-					}
-				}
-			}
-		}
+	  for(int j = 1; j < M; j++) {
+	    for(int k = 0; k <= 100; k += 25) {
+	      for(int l = 0; l < M; l++) {
+	        for(int m = 0; m <= 100; m += 25) {
+	          for(int n = m; n <= 100; n += 25) {
+	             dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
+	                2*transportCost + costToStay(j, i, n, k));
+	             if(n == m) {
+	                dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost));
+                 }
+              }
+            }
+          }
+        }
+      }
 	}
-	
+
 	return dpCUBE;
 }
 
@@ -107,7 +107,7 @@ int costToCharge(int start, int end) {
 	return (end - start)*200;
 }
 
-int costToStay(int start, int end) {
+int costToStay(int M, int T, int start, int end) {
 	return  -1*(start - end)*200;
 }
 
@@ -120,9 +120,8 @@ int main () {
 	cout << "Enter # microgrids: " << endl;
 	cin >> M;
 
-	for(int i = 0; i <= T; i++) {
+	vector<vector<vector<int> > > dpCUBE = cheapestPath(T, M);
 
-	}
 	return 0;
 }
 
