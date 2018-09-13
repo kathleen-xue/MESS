@@ -100,7 +100,7 @@ cout << "hi" << endl;
 	        for(int m = 0; m <= 100; m += 25) {
 	          for(int n = m; n <= 100; n += 25) {
 	             dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
-	                transportCost[j][M] + transportCost[l][M] + costToStay(j, i, n, k));
+	                transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
 	             if(n == m) {
 	                dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost[j][l]));
                  }
