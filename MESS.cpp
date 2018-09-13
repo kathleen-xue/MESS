@@ -103,13 +103,13 @@ cout << "hi" << endl;
 	                transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
 	             if(n == m) {
 	                dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost[j][l]));
-                 }
+                   }
+                }
               }
             }
           }
         }
-      }
-	}
+	  }
 
 	return dpCUBE;
 }
