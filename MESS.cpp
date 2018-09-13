@@ -49,6 +49,18 @@ struct Network {
 
 vector<vector<vector<int> > > cheapestPath(int T, int M) {
 
+	vector<vector<int> > endCharges;
+	for(int i = 0; i < T; i++) {
+		vector<int> curr;
+		for(int j = 0; j < M; j++) {
+			int ec = 0;
+			cout << "What is Microgrid " << j << "'s end charge on day " << i << "? " << endl;
+			cin >> ec;
+			curr.push_back(ec);
+		}
+		endCharges.push_back(curr);
+	}
+
 	int transportCost = 50;
 
 	vector<vector<vector<int> > > dpCUBE;
@@ -64,24 +76,31 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 
 	dpCUBE.push_back(first);
 
-	vector<vector<int> > curr;
+	
 	for(int i = 1; i < T; i++) {
+		vector<vector<int> > curr;
 		for(int j = 1; j < M; j++) {
 			vector<int> currMicro;
-			int currMin = INT_MAX;
 			for(int k = 0; k <= 100; k += 25) {
+				int currMin = INT_MAX;
 				for(int l = 0; l < M; l++) {
 					for(int m = 0; m <= 100; m += 25) {
 						int bestCharge = 0;
 						for(int n = m; n <= 100; n += 25) {
-							//if((m == n) && dpCUBE[i-1][l][m] + )
-							currMin = min(currMin, dpCUBE[i-1][l][m] + costToCharge(m, n) + 2*transportCost);
+							int temp = currMin;
+							currMin = min(currMin, dpCUBE[i-1][l][m] + costToCharge(m, n) + 2*transportCost + costToStay(n, endCharges[i-1][l]));
+							if(temp > currMin) bestCharge = n;
 						}
+						if(m == bestCharge) currMin = dpCUBE[i-1][l][m] + transportCost;
 					}
 				}
+				currMicro.push_back(currMin);
 			}
+			curr.push_back(currMicro);
 		}
+		dpCUBE.push_back(curr);
 	}
+	return dpCUBE;
 }
 
 int costToCharge(int start, int end) {
