@@ -75,7 +75,7 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 		vector<vector<int> > curr1; 
 		for(int j = 0; j < M; j++) {
 			vector<int> curr2;
-			for(int k = 0; k < 100; k += 25) {
+			for(int k = 0; k <= 100; k+=25) {
 				curr2.push_back(1000000);
 				//cout << curr2[k/25] << " ";
 			}
@@ -85,24 +85,24 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 		dpCUBE.push_back(curr1);
 	}
 
-cout << "hi" << endl;
 
 	for(int i = 0; i < M; i++) {
-		for(int j = 0; j <= 100; j += 25) {
-			dpCUBE[0][i][j] = costToStay(i, 0, 100, j);
+		for(int j = 0; j <= 100; j+=25) {
+			dpCUBE[0][i][j/25] = costToStay(i, 0, 100, j);
 		}
 	}
+
 	
 	for(int i = 1; i < T; i++) {
 	  for(int j = 1; j < M; j++) {
-	    for(int k = 0; k <= 100; k += 25) {
+	    for(int k = 0; k <= 100; k+=25) {
 	      for(int l = 0; l < M; l++) {
-	        for(int m = 0; m <= 100; m += 25) {
-	          for(int n = m; n <= 100; n += 25) {
-	             dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
+	        for(int m = 0; m <= 100; m+=25) {
+	          for(int n = m; n <= 100; n+=25) {
+	             dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
 	                transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
 	             if(n == m) {
-	                dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost[j][l]));
+	                dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
                    }
                 }
               }
