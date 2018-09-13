@@ -88,14 +88,10 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 				for(int l = 0; l < M; l++) {
 					for(int m = 0; m <= 100; m += 25) {
 						for(int n = m; n <= 100; n += 25) {
-							if(n == m) {
-								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], min(dpCUBE[i-1][l][m] + costToCharge(m, n) + 
-												  2*transportCost + costToStay(n, endCharges[i-1][l]), 
-												  (dpCUBE[i-1][l][m] + transportCost)));
-							}
-							else {
-								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
+							dpCUBE[i][j][k] = min(dpCUBE[i][j][k], dpCUBE[i-1][l][m] + costToCharge(m, n) + 
 								2*transportCost + costToStay(n, endCharges[i-1][l]));
+							if(n == m) {
+								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], (dpCUBE[i-1][l][m] + transportCost));
 							}
 						}
 					}
@@ -103,6 +99,7 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 			}
 		}
 	}
+	
 	return dpCUBE;
 }
 
