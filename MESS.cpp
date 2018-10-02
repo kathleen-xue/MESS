@@ -83,6 +83,7 @@ vector<vector<vector<long long> > > cheapestPath(int T, int M) {
 }
 
 int main () {
+	//testing to see if segfault; will make other tests for functionality
 	int T = 0;
 	int M = 0;
 	cout << "Enter # days: " << endl;
