@@ -11,42 +11,6 @@
 #include <iomanip>
 using namespace std;
 
-/*struct Microgrid {
-	int currState;
-	int endState;
-	int time;
-	int ID;
-	Microgrid(int i, int t, int curr) {
-		ID = i;
-		time = t;
-		currState = curr;
-	}
-};
-
-struct Network {
-	int numDays;
-	int numMicros;
-	vector<vector<int> > edgeCosts;
-	int transportCost;
-	Microgrid* B;
-	Microgrid* D;
-	Network(int t, int m) { //t=#days, m=#microgrids
-		B = new Microgrid(0,0,100);
-		B->endState = 100;
-		numDays = t;
-		numMicros = m;
-		transportCost = 50;
-		for(int i = 0; i <= numMicros; i++) {
-			vector<int> currEdges;
-			for(int j = 0; j <= numMicros; j++) {
-				if(j != i) currEdges.push_back(transportCost);
-				else currEdges.push_back(0);
-			}
-			edgeCosts.push_back(currEdges);
-		}
-	}
-};*/
-
 int costToCharge(int start, int end) {
 	return (end - start)*200;
 }
