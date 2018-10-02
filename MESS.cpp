@@ -12,12 +12,13 @@
 using namespace std;
 
 int costToCharge(int start, int end) {
-	return (end - start)*200;
+	if(end <= start) return INT_MAX;
+	return (end - start)*20;
 }
 
 int costToStay(int M, int T, int start, int end) {
 	if(start <= end) return INT_MAX;
-	return  -1*(start - end)*200;
+	return -1*(start - end)*200;
 }
 
 vector<vector<vector<long long> > > cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path) {
@@ -32,7 +33,7 @@ vector<vector<vector<long long> > > cheapestPathDP(int T, int M, vector<pair<pai
 		for(int j = 0; j < M+1; j++) {
 			if(i == j) curr.push_back(0);
 			else {
-				curr.push_back(abs(i-j)*30);
+				curr.push_back(abs(i-j)*3);
 			}
 		}
 		transportCost.push_back(curr);
@@ -57,7 +58,7 @@ vector<vector<vector<long long> > > cheapestPathDP(int T, int M, vector<pair<pai
 
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j+=25) {
-			dpCUBE[0][i][j/25] = -1*costToStay(i, 0, 100, j);
+			dpCUBE[0][i][j/25] = costToStay(i, 0, 100, j);
 		}
 	}
 	
@@ -70,7 +71,7 @@ vector<vector<vector<long long> > > cheapestPathDP(int T, int M, vector<pair<pai
 					for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
 						for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
 							if(n != m) {
-								if(dpCUBE[i][j][k/25] > dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + costToStay(j, i, n, k)) {
+								if(dpCUBE[i][j][k/25] > dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k)) {
 									currMinCost = dpCUBE[i-1][l][m/25];
 									micro.first = l;
 									micro.second = m;
