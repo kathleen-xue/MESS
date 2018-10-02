@@ -19,11 +19,12 @@ int costToStay(int M, int T, int start, int end) {
 	return  -1*(start - end)*200;
 }
 
-vector<vector<vector<long long> > > cheapestPath(int T, int M) { //This function finds the maximum reduction of cost for a battery to
-																 //end up at any microgrid at any charge state on day T. If we iterate 
-																 //this function through x batteries, the final dpCUBE will output 
-																 //maximum reduction of cost from all the batteries for each
-																 //microgrid after T days (this will be seen on the last level of the cube).
+vector<vector<vector<long long> > > cheapestPath(int T, int M) {
+//This function finds the maximum reduction of cost for a battery to
+//end up at any microgrid at any charge state on day T. If we iterate 
+//this function through x batteries, the final dpCUBE will output 
+//maximum reduction of cost from all the batteries for each
+//microgrid after T days (this will be seen on the last level of the cube).
 	vector<vector<int> > transportCost;
 	for(int i = 0; i < M+1; i++) {
 		vector<int> curr;
