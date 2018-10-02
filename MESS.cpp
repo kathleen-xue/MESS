@@ -64,18 +64,18 @@ vector<vector<vector<long long> > > cheapestPath(int T, int M) {
 	for(int i = 1; i < T; i++) { //cycling through each day
 		for(int j = 1; j < M; j++) { //cycling through the microgrids of current day
 			for(int k = 0; k <= 100; k+=25) { //cycling through each of the charge states of each microgrid of current day
-			   	for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
-			    	for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
-			          	for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
-			             	if(n != m) dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
+				for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
+					for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
+						for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
+							if(n != m) dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
 			                								transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
-			             	else { 
-			                	dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
-		                 	}
-		              	}
-		            }
-		        }
-		    }
+							else { 
+								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
