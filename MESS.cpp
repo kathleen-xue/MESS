@@ -93,23 +93,28 @@ vector<vector<vector<int> > > cheapestPath(int T, int M) {
 	}
 
 	
-	for(int i = 1; i < T; i++) {
-	  for(int j = 1; j < M; j++) {
-	    for(int k = 0; k <= 100; k+=25) {
-	      for(int l = 0; l < M; l++) {
-	        for(int m = 0; m <= 100; m+=25) {
-	          for(int n = m; n <= 100; n+=25) {
-	             dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
-	                transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
-	             if(n == m) {
-	                dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
-                   }
-                }
-              }
-            }
-          }
-        }
-      }
+	for(int i = 1; i < 2*T; i++) {
+		if(T%2) {
+			for(int j = 1; j < M; j++) {
+			    for(int k = 0; k <= 100; k+=25) {
+			    	for(int l = 0; l < M; l++) {
+			    		for(int m = 0; m <= 100; m+=25) {
+			          		for(int n = m; n <= 100; n+=25) {
+			             		dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
+			                	transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
+			             		if(n == m) { 
+			                		dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
+		                 		}
+		              		}
+		            	}
+		          	}
+		        }
+		    }
+		}
+		else {
+
+		}
+    }
 
 	return dpCUBE;
 }
