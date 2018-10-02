@@ -16,10 +16,11 @@ int costToCharge(int start, int end) {
 }
 
 int costToStay(int M, int T, int start, int end) {
+	if(start <= end) return INT_MAX;
 	return  -1*(start - end)*200;
 }
 
-vector<vector<vector<long long> > > cheapestPath(int T, int M) {
+vector<vector<vector<long long> > > cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path) {
 //This function finds the maximum reduction of cost for a battery to
 //end up at any microgrid at any charge state on day T. If we iterate 
 //this function through x batteries, the final dpCUBE will output 
@@ -56,20 +57,33 @@ vector<vector<vector<long long> > > cheapestPath(int T, int M) {
 
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j+=25) {
-			dpCUBE[0][i][j/25] = costToStay(i, 0, 100, j);
+			dpCUBE[0][i][j/25] = -1*costToStay(i, 0, 100, j);
 		}
 	}
-
 	
 	for(int i = 1; i < T; i++) { //cycling through each day
+		int currMinCost = INT_MAX;
+		pair<int, int> micro;
 		for(int j = 1; j < M; j++) { //cycling through the microgrids of current day
 			for(int k = 0; k <= 100; k+=25) { //cycling through each of the charge states of each microgrid of current day
 				for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
 					for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
 						for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
-							if(n != m) dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
-			                								transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
+							if(n != m) {
+								if(dpCUBE[i][j][k/25] > dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + costToStay(j, i, n, k)) {
+									currMinCost = dpCUBE[i-1][l][m/25];
+									micro.first = l;
+									micro.second = m;
+								}
+								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], dpCUBE[i-1][l][m/25] + costToCharge(m, n) + 
+			                						 transportCost[j][M] + transportCost[M][l] + costToStay(j, i, n, k));
+							}
 							else { 
+								if(dpCUBE[i][j][k/25] > dpCUBE[i-1][l][m/25] + transportCost[j][l]) {
+									currMinCost = dpCUBE[i-1][l][m/25];
+									micro.first = l;
+									micro.second = m;
+								}
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], (dpCUBE[i-1][l][m/25] + transportCost[j][l]));
 							}
 						}
@@ -77,6 +91,7 @@ vector<vector<vector<long long> > > cheapestPath(int T, int M) {
 				}
 			}
 		}
+		path.push_back(make_pair(make_pair(micro.first, micro.second), currMinCost));
 	}
 
 	return dpCUBE;
@@ -91,7 +106,11 @@ int main () {
 	cout << "Enter # microgrids: " << endl;
 	cin >> M;
 
-	vector<vector<vector<long long> > > dpCUBE = cheapestPath(T, M);
+	vector<pair<pair<int, int>, int> > path;
+	vector<vector<vector<long long> > > dpCUBE = cheapestPathDP(T, M, path);
+	for(int i = 0; i < path.size(); i++) {
+		cout << i+1 << " microgrid: " << path[i].first.first << " state: " << path[i].first.second << " cost: " << path[i].second << endl;
+	}
 
 	return 0;
 }
