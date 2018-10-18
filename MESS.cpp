@@ -70,7 +70,6 @@ vector<vector<vector<long double> > > cheapestPathDP(long double& currMinCost, i
 }
 
 int main () {
-	//testing to see if segfault; will make other tests for functionality
 	int T = 0;
 	int M = 0;
 	int numBatteries = 0;
