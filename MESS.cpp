@@ -126,10 +126,10 @@ int main () {
 
 	long double currMinCost = 100000;
 
-for(int k = 0; k < numBatteries; k++) {
+for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	vector<pair<pair<int, int>, int> > path;
 	vector<vector<vector<long double> > > dpCUBE1 = cheapestPathDP(currMinCost, T, M, path, transportCost, dpCUBE);
-	cout << "Minimum cost path for battery " << k+1 << ": " << endl;
+	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = 0; i < path.size(); i++) {
 		cout << setw(2) << i+1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
 		" | state: " << setw(2) << path[i].first.second << setw(2) << " | cost: " << setw(2) << path[i].second << setw(2) << endl;
