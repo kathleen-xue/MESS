@@ -20,25 +20,33 @@ int costToCharge(int start, int end) {
 }
 
 int costToStay(int M, int T, int start, int end) {
-	return -1*(start - end)*20;
+	return -1*(start - end)*30;
 }
 
-vector<vector<vector<long double> > > cheapestPathDP(long double& currMinCost, int T, int M, vector<pair<pair<int, int>, int> >& path, vector<vector<double> > transportCost, vector<vector<vector<long double> > >& dpCUBE) {
+vector<vector<vector<long long> > > cheapestPathDP(long long& currMinCost, int T, int M, vector<pair<pair<int, int>, int> >& path, vector<vector<double> > transportCost, vector<vector<vector<long long> > >& dpCUBE) {
 //This function finds the maximum reduction of cost for a battery to
 //end up at any microgrid at any charge state on day T. If we iterate 
 //this function through x batteries, the final dpCUBE will output 
 //maximum reduction of cost from all the batteries for each
 //microgrid after T days (this will be seen on the last level of the cube).
+
+	/*for(int i = 1; i < T; i++) {
+		for(int j = 0; j <= (M-1)*100; j += 25) {
+			for(int k = 0; k < (M-1)*100; k += 25) {
+
+			}
+		}
+	}*/
 	
 	for(int i = 1; i < T; i++) { //cycling through each day
 		pair<int, int> micro;
-		for(int j = 1; j < M; j++) { //cycling through the microgrids of current day
+		for(int j = 0; j < M; j++) { //cycling through the microgrids of current day
 			for(int k = 0; k <= 100; k+=25) { //cycling through each of the charge states of each microgrid of current day
 				for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
 					for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
 						for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
 							if(n != m) {
-								long double curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n);
+								long long curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n);
 								if(curr < 0) curr = 0;
 								if(dpCUBE[i][j][k/25] >= curr) {
 									currMinCost = dpCUBE[i-1][l][m/25];
@@ -48,7 +56,7 @@ vector<vector<vector<long double> > > cheapestPathDP(long double& currMinCost, i
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
 							}
 							else { 
-								long double curr = dpCUBE[i-1][l][m/25] + transportCost[j][l];
+								long long curr = dpCUBE[i-1][l][m/25] + transportCost[j][l];
 								if(curr < 0) curr = 0;
 								if(dpCUBE[i][j][k/25] >= curr) {
 									//cout << costToStay(j, i, n, n) << endl;
@@ -86,7 +94,9 @@ int main () {
 		for(int j = i; j < M+1; j++) {
 			if(i == j) transportCost[i][j] = 0;
 			else {
-				double currRand = (double)((rand() % 5)) + 1;
+				double currRand = 0.0;
+				if(i == M || j == M) currRand = (double)((rand() % 3)) + 1;
+				else currRand = (double)((rand() % 9)) + 1;
 				transportCost[i][j] = currRand;
 				transportCost[j][i] = currRand;
 			}
@@ -102,12 +112,12 @@ int main () {
 	}
 	cout << endl;
 
-	vector<vector<vector<long double> > > dpCUBE;
+	vector<vector<vector<long long> > > dpCUBE;
 
 	for(int i = 0; i < T; i++) {
-		vector<vector<long double> > curr1; 
+		vector<vector<long long> > curr1; 
 		for(int j = 0; j < M; j++) {
-			vector<long double> curr2;
+			vector<long long> curr2;
 			for(int k = 0; k <= 100; k+=25) {
 				curr2.push_back(10000);
 				//cout << curr2[k/25] << " ";
@@ -124,11 +134,11 @@ int main () {
 		}
 	}
 
-	long double currMinCost = 100000;
+	long long currMinCost = 100000;
 
 for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	vector<pair<pair<int, int>, int> > path;
-	vector<vector<vector<long double> > > dpCUBE1 = cheapestPathDP(currMinCost, T, M, path, transportCost, dpCUBE);
+	vector<vector<vector<long long> > > dpCUBE1 = cheapestPathDP(currMinCost, T, M, path, transportCost, dpCUBE);
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = 0; i < path.size(); i++) {
 		cout << setw(2) << i+1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
