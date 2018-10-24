@@ -13,7 +13,7 @@
 #include <iomanip>
 using namespace std;
 
-map<pair<int ,int>, int > demand;
+map<pair<int, int>, int> demand;
 
 int costToCharge(int start, int end) {
 	return (end - start)*3;
@@ -141,7 +141,7 @@ int main () {
 	}
 	cout << endl;
 
-//INITIALIZE DPCUBE
+//INITIALIZE DP_CUBE
 	vector<vector<vector<long long> > > dpCUBE;
 
 	for(int i = 0; i <= T; i++) {
@@ -158,37 +158,31 @@ int main () {
 		dpCUBE.push_back(curr1);
 	}
 
-	for(int i = 0; i < M; i++) {
-		for(int j = 0; j <= 100; j+=25) {
-			if(j-100 == 0) dpCUBE[0][i][j/25] = 0; //at day 0, battery can be at 100% at any microgrid at 0 cost
-			else dpCUBE[0][i][j/25] = 1000000;
-		}
-	}
-
+//RUN ALGORITHM
 for(int k = 0; k < numBatteries; k++) { //loops through the batteries
-	for (int i = 1; i <= T; i++) {
+	for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
 		for (int j = 0; j < M; j++) {
 			for (int l = 0; l <= 100; l += 25) {
-				dpCUBE[i][j][l / 25] = 1000000;
+				dpCUBE[i][j][l/25] = 1000000;
 			}
 		}
 	}
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j+=25) {
 			if(j-100 == 0) dpCUBE[0][i][j/25] = 0;
-			else dpCUBE[0][i][j/25] = 1000000;
+			else dpCUBE[0][i][j/25] = 1000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
 		}
 	}
-
+	
 	vector<pair<pair<int, int>, int> > path;
 	cheapestPathDP(T, M, path, transportCost, dpCUBE);
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
-	for(int i = 0; i < path.size(); i++) {
-		cout << setw(2) << i+1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
-		" | state: " << setw(2) << path[i].first.second << setw(2) << " | cost: " << setw(2) << path[i].second << setw(2) << endl;
+	for(int i = path.size() - 1; i >= 0; i--) {
+		cout << setw(2) << path.size() - i + 1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
+		" | state: " << setw(2) << path[i].first.second << setw(2) << " | cost: " << setw(2) << path[i].second << setw(2) << endl; //cost is the maximum negative cost 
+																																   //accrued for smart grid per battery
 	}
 }
-
 
 	return 0;
 }
