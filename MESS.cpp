@@ -178,7 +178,7 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	cheapestPathDP(T, M, path, transportCost, dpCUBE);
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = path.size() - 1; i >= 0; i--) {
-		cout << setw(2) << path.size() - i + 1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
+		cout << setw(2) << path.size() - i + 1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << //state is battery state after usage on day i
 		" | state: " << setw(2) << path[i].first.second << setw(2) << " | cost: " << setw(2) << path[i].second << setw(2) << endl; //cost is the maximum negative cost 
 																																   //accrued for smart grid per battery
 	}
