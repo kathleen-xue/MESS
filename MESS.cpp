@@ -15,18 +15,15 @@ using namespace std;
 
 map<pair<int ,int>, int > demand;
 
-//define costs properly
-//transportation costs: coordinate/location: generate random MxM symmetric matrix, and each cell will be distance from microgrid i to microgrid j
-
 int costToCharge(int start, int end) {
 	return (end - start)*3;
 }
 
 int costToStay(int M, int T, int end, int start) {
-
 	int d = demand[make_pair(T, M)];
-
-	return -1 * sqrt(d) * ((d - max(d - (start - end), 0))*3);
+	return -1 * sqrt(d) * ((d - max(d - (start-end), 0))*3); //created a map of microgrid demands because previous costToStay function assumed 
+															 //demands didn't exist and caused batteries to stay at one microgrid throughout 
+															 //duration of days
 }
 
 void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE) {
@@ -46,27 +43,10 @@ void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vect
 						for(int k = n; k >= 0; k-=25) { //cycling through each of the charge states of each microgrid of current day
 							if(n != m) {
 								long long curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n);
-								//cout << i << " " << j << " "  << k << " " << l << " " << m << " " << curr << endl;
-								// if(curr < 0) curr = 0;
-								//if(dpCUBE[i][j][k/25] >= curr) {
-									//currMinCost = dpCUBE[i-1][l][m/25];
-									//micro.first = l;
-									//micro.second = n;
-								//}
-								//cout << i << " " << j << " "<<  curr << endl;
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
-								//cout << i << " " << j << " " << k<< " " << dpCUBE[i][j][k/25] << endl;
 							}
 							else { 
 								long long curr = dpCUBE[i-1][l][m/25] + transportCost[j][l] + costToStay(j, i, k, n);
-								//cout << curr << endl;
-								// if(curr < 0) curr = 0;
-								//if(dpCUBE[i][j][k/25] >= curr) {
-									//cout << costToStay(j, i, n, n) << endl;
-									//currMinCost = dpCUBE[i-1][l][m/25];
-									//micro.first = l;
-									//micro.second = m;
-								//}
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
 							}
 						}
@@ -74,7 +54,6 @@ void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vect
 				}
 			}
 		}
-		//path.push_back(make_pair(make_pair(micro.first, micro.second), currMinCost));
 	}
 
 //RECONSTRUCTING PATH
