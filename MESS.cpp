@@ -29,14 +29,6 @@ vector<vector<vector<long long> > > cheapestPathDP(long long& currMinCost, int T
 //this function through x batteries, the final dpCUBE will output 
 //maximum reduction of cost from all the batteries for each
 //microgrid after T days (this will be seen on the last level of the cube).
-
-	/*for(int i = 1; i < T; i++) {
-		for(int j = 0; j <= (M-1)*100; j += 25) {
-			for(int k = 0; k < (M-1)*100; k += 25) {
-
-			}
-		}
-	}*/
 	
 	for(int i = 1; i < T; i++) { //cycling through each day
 		pair<int, int> micro;
@@ -138,7 +130,7 @@ int main () {
 
 for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	vector<pair<pair<int, int>, int> > path;
-	vector<vector<vector<long long> > > dpCUBE1 = cheapestPathDP(currMinCost, T, M, path, transportCost, dpCUBE);
+	dpCUBE = cheapestPathDP(currMinCost, T, M, path, transportCost, dpCUBE);
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = 0; i < path.size(); i++) {
 		cout << setw(2) << i+1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << 
