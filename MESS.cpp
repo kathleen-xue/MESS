@@ -13,20 +13,33 @@
 #include <iomanip>
 using namespace std;
 
+//change demands to be not affected by previous day's demand
+//each day, generate a new set of demands for each microgrid
+//demand of microgrid i on day2 can only be affected by batteries on microgrid i on day2
+//edit path visualisation (add start state, whether battery arrived at charging station)
+//compare to simpler heuristic (simple greedy algorithm)
+
+struct path {
+	vector<pair<int, int> > states; //battery states: path.states[i].first = start state, path.states[i].second = end state
+	vector<int> micros; //microgrids
+	vector<int> costs;
+};
+
 map<pair<int, int>, int> demand;
 
 int costToCharge(int start, int end) {
-	return (end - start)*3;
+	return (end - start);
 }
 
-int costToStay(int M, int T, int end, int start) {
+int costToStay(int M, int T, int end, int start) { //at each microgrid compute total number of batteries that arrived and the amount of benefit they created total
+	//return -1 * sqrt(start - end) * 10;
 	int d = demand[make_pair(T, M)];
 	return -1 * sqrt(d) * ((d - max(d - (start-end), 0))*3); //created a map of microgrid demands because previous costToStay function assumed 
 															 //demands didn't exist and caused batteries to stay at one microgrid throughout 
 															 //duration of days
 }
 
-void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE) {
+void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE) {
 //This function finds the maximum reduction of cost for a battery to
 //end up at any microgrid at any charge state on day T. If we iterate 
 //this function through x batteries, the final dpCUBE will output 
@@ -58,22 +71,31 @@ void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vect
 
 //RECONSTRUCTING PATH
 	long long minimum = 1e18; //constructing path of largest negative cost (backtracking), minimum denotes current largest negative cost
-	pair<int, int> micro;
+
+	for(int i = 0; i <= T; i++) {
+		P.states.push_back(make_pair(0,0));
+		P.micros.push_back(0);
+		P.costs.push_back(0);
+	}
+
+	//P.states[0].first = 0;
+
 	for (int j = 0; j < M; j++) {
 		for (int k = 0; k <= 100; k+=25) {
 			if (dpCUBE[T][j][k / 25] < minimum) { //finding first path node (from day T)
-				micro.first = j; // microgrid causing largest negative cost
-				micro.second = k; // battery state causing largest negative cost
+				P.micros[0] = j; // microgrid causing largest negative cost
+				P.states[0].first = k; // battery state causing largest negative cost
 				minimum = dpCUBE[T][j][k / 25];
 			}
 		}
 	}
-	path.push_back(make_pair(micro, minimum));
+	//path.push_back(make_pair(micro, minimum));
 
 	for (int i = T - 1; i >= 0; i--) {
+		int i_ = T - i;
 		bool found = false;
-		int j = micro.first;
-		int k = micro.second;
+		int j = P.micros[i_ - 1];
+		int k = P.states[i_ - 1].first;
 		for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
 			for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
 				for(int n = k; n <= 100; n+=25) { // cycling from charge state = end state, until charge state = 100
@@ -88,14 +110,18 @@ void cheapestPathDP(int T, int M, vector<pair<pair<int, int>, int> >& path, vect
 					if (curr == minimum) { //we found microgrid and battery state causing largest negative cost
 						minimum = dpCUBE[i][l][m/25];
 						found = true;
-						micro.first = l;
-						micro.second = m;
+						P.micros[i_] = l;
+						P.states[i_].second = m;
+						P.states[i_-1].first = n;
+						P.costs[i_] = minimum;
+						//micro.first = l;
+						//micro.second = m;
 						demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
 					}
 				}
 			}
 		}
-		path.push_back(make_pair(micro, minimum));
+		//path.push_back(make_pair(micro, minimum));
 	}
 
 }
@@ -112,7 +138,7 @@ int main () {
 	cin >> numBatteries;
 	for (int i = 0; i <= T; i++) {
 		for (int j = 0; j < M; j++) {
-			demand[make_pair(i, j)] = rand() % 100 + 100;
+			demand[make_pair(i, j)] = rand() % 200;
 		}
 	}
 
@@ -124,8 +150,8 @@ int main () {
 			if(i == j) transportCost[i][j] = 0;
 			else {
 				long long currRand = 0;
-				if(i == M || j == M) currRand = (long long)((rand() % 3)) + 1;
-				else currRand = (long long)((rand() % 9)) + 1;
+				//if(i == M || j == M) currRand = (long long)((rand() % 3)) + 1;
+				currRand = (long long)((rand() % 10)) + 10; //experiment more with transportation cost
 				transportCost[i][j] = currRand;
 				transportCost[j][i] = currRand;
 			}
@@ -135,7 +161,7 @@ int main () {
 	cout << "Transportation Costs: (between microgrid i and microgrid j)" << endl;
 	for(int i = 0; i < M+1; i++) {
 		for(int j = 0; j < M+1; j++) {
-			cout << setw(2) << transportCost[i][j] << setw(2);
+			cout << "\t" << transportCost[i][j];
 		}
 		cout << endl;
 	}
@@ -174,13 +200,16 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 		}
 	}
 	
-	vector<pair<pair<int, int>, int> > path;
-	cheapestPathDP(T, M, path, transportCost, dpCUBE);
+	path P;
+	cheapestPathDP(T, M, P, transportCost, dpCUBE);
+
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
-	for(int i = path.size() - 1; i >= 0; i--) {
-		cout << setw(2) << path.size() - i + 1 << setw(2) << " | microgrid " << setw(2) << path[i].first.first << setw(2) << //state is battery state after usage on day i
-		" | state: " << setw(2) << path[i].first.second << setw(2) << " | cost: " << setw(2) << path[i].second << setw(2) << endl; //cost is the maximum negative cost 
-																																   //accrued for smart grid per battery
+	for(int i = P.micros.size() - 1; i >= 0; i--) {
+		cout << setw(2) << P.micros.size() - i - 1 << setw(2) << " | microgrid " << setw(2) << P.micros[i] << setw(2) << //state is battery state after usage on day i
+		" | start state: " << setw(2) << P.states[i].first << setw(2) << " | end state: " << setw(2) << P.states[i].second << setw(2) << 
+		" | cost: " << setw(2) << P.costs[i] << setw(2); //cost is the maximum negative cost accrued for smart grid per battery
+		if(i > 0 && P.states[i].first > P.states[i-1].second) cout << " | charged ";
+		cout << endl;
 	}
 }
 
