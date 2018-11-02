@@ -16,7 +16,7 @@ using namespace std;
 //change demands to be not affected by previous day's demand
 //each day, generate a new set of demands for each microgrid
 //demand of microgrid i on day2 can only be affected by batteries on microgrid i on day2
-//edit path visualisation (add start state, whether battery arrived at charging station)
+//edit path visualisation (add start state, whether battery arrived at charging station) DONE
 //compare to simpler heuristic (simple greedy algorithm)
 
 struct path {
@@ -116,7 +116,7 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 						P.costs[i_] = minimum;
 						//micro.first = l;
 						//micro.second = m;
-						demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
+						//demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
 					}
 				}
 			}
@@ -205,10 +205,10 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = P.micros.size() - 1; i >= 0; i--) {
-		cout << setw(2) << P.micros.size() - i - 1 << setw(2) << " | microgrid " << setw(2) << P.micros[i] << setw(2) << //state is battery state after usage on day i
-		" | start state: " << setw(2) << P.states[i].first << setw(2) << " | end state: " << setw(2) << P.states[i].second << setw(2) << 
-		" | cost: " << setw(2) << P.costs[i] << setw(2); //cost is the maximum negative cost accrued for smart grid per battery
-		if(i > 0 && P.states[i].first > P.states[i-1].second) cout << " | charged ";
+		cout << "day " << P.micros.size() - i - 1 << '\t' << "| microgrid " << P.micros[i] << '\t' << //state is battery state after usage on day i
+		"| start %: " << P.states[i].first << '\t' << "| end %: " << P.states[i].second << '\t' << 
+		"| cost: " << P.costs[i] << '\t'; //cost is the maximum negative cost accrued for smart grid per battery
+		if(i > 0 && P.states[i].first > P.states[i-1].second) cout << "| charged ";
 		cout << endl;
 	}
 }
