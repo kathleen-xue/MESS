@@ -13,11 +13,15 @@
 #include <iomanip>
 using namespace std;
 
+//TO DO:
 //change demands to be not affected by previous day's demand
+
+//compare to simpler heuristic (simple greedy algorithm)
+
+//DONE:
+//edit path visualisation (add start state, whether battery arrived at charging station)
 //each day, generate a new set of demands for each microgrid
 //demand of microgrid i on day2 can only be affected by batteries on microgrid i on day2
-//edit path visualisation (add start state, whether battery arrived at charging station) DONE
-//compare to simpler heuristic (simple greedy algorithm)
 
 struct path {
 	vector<pair<int, int> > states; //battery states: path.states[i].first = start state, path.states[i].second = end state
@@ -25,21 +29,35 @@ struct path {
 	vector<int> costs;
 };
 
-map<pair<int, int>, int> demand;
+vector<vector<int> > createDemands(int M, int T) {
+	vector<vector<int> > demands;
+	for(int i = 0; i < T; i++) {
+		vector<int> demDay_i;
+		for(int j = 0; j < M; j++) {
+			demDay_i.push_back((rand() % 50) + 200);
+		}
+		demands.push_back(demDay_i);
+	}
+	return demands;
+}
+
 
 int costToCharge(int start, int end) {
 	return (end - start);
 }
 
-int costToStay(int M, int T, int end, int start) { //at each microgrid compute total number of batteries that arrived and the amount of benefit they created total
+
+int costToStay(int M, int T, int end, int start, vector<vector<int> > demands) { //at each microgrid compute total number of batteries that arrived and the amount of benefit they created total
 	//return -1 * sqrt(start - end) * 10;
-	int d = demand[make_pair(T, M)];
-	return -1 * sqrt(d) * ((d - max(d - (start-end), 0))*3); //created a map of microgrid demands because previous costToStay function assumed 
+	int d = demands[T-1][M];
+	double diff = d - (start - end)*0.5;
+	return -1 * sqrt(d) * ((d - max(diff, 0.0))*3); //created a map of microgrid demands because previous costToStay function assumed 
 															 //demands didn't exist and caused batteries to stay at one microgrid throughout 
 															 //duration of days
 }
 
-void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE) {
+
+void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE, vector<vector<int> >& demands) {
 //This function finds the maximum reduction of cost for a battery to
 //end up at any microgrid at any charge state on day T. If we iterate 
 //this function through x batteries, the final dpCUBE will output 
@@ -47,6 +65,8 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 //microgrid after T days (this will be seen on the last level of the cube).
 
 //FINDING MINIMUM COSTS	
+	int startState = 0;
+	int endState = 0;
 	for(int i = 1; i <= T; i++) { //cycling through each day
 		pair<int, int> micro;
 		for(int j = 0; j < M; j++) { //cycling through the microgrids of current day
@@ -55,17 +75,28 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 					for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
 						for(int k = n; k >= 0; k-=25) { //cycling through each of the charge states of each microgrid of current day
 							if(n != m) {
-								long long curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n);
+								long long curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n, demands);
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
+								if(dpCUBE[i][j][k/25] == curr) {
+									startState = n;
+									endState = k;
+								}
 							}
 							else { 
-								long long curr = dpCUBE[i-1][l][m/25] + transportCost[j][l] + costToStay(j, i, k, n);
+								long long curr = dpCUBE[i-1][l][m/25] + transportCost[j][l] + costToStay(j, i, k, n, demands);
 								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
+								if(dpCUBE[i][j][k/25] == curr) {
+									startState = n;
+									endState = k;
+								}
 							}
 						}
 					}
 				}
 			}
+			int margDecrease = demands[i-1][j] - sqrt(demands[i-1][j] - abs(startState - endState));
+			cout << "margDecrease: " << margDecrease << endl;
+			demands[i-1][j] = max(margDecrease, 0);
 		}
 	}
 
@@ -102,10 +133,10 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 					if (found) continue;
 					long long curr = 0;
 					if(n != m) {
-						curr = dpCUBE[i][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i+1, k, n);
+						curr = dpCUBE[i][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i+1, k, n, demands);
 					}
 					else { 
-						curr = dpCUBE[i][l][m/25] + transportCost[j][l] + costToStay(j, i+1, k, n);
+						curr = dpCUBE[i][l][m/25] + transportCost[j][l] + costToStay(j, i+1, k, n, demands);
 					}
 					if (curr == minimum) { //we found microgrid and battery state causing largest negative cost
 						minimum = dpCUBE[i][l][m/25];
@@ -116,6 +147,8 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 						P.costs[i_] = minimum;
 						//micro.first = l;
 						//micro.second = m;
+						//int margDecrease = demands[i_-1][j] - sqrt(demands[i_-1][j] - abs(P.states[i_-1].first - P.states[i_-1].second));
+						//demands[i_-1][j] = max(margDecrease, 0);
 						//demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
 					}
 				}
@@ -125,6 +158,7 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 	}
 
 }
+
 
 int main () {
 	int T = 0;
@@ -136,10 +170,25 @@ int main () {
 	cin >> M;
 	cout << "Enter # batteries: " << endl;
 	cin >> numBatteries;
-	for (int i = 0; i <= T; i++) {
+	/*for (int i = 0; i <= T; i++) {
 		for (int j = 0; j < M; j++) {
 			demand[make_pair(i, j)] = rand() % 200;
 		}
+	}*/
+
+//INITIALIZE DEMAND MATRIX
+	vector<vector<int> > demands = createDemands(M, T); //create demands matrix
+	cout << "Matrix Demands: (starting demand of matrix j at day i)" << endl;
+	cout << "mGrid ";
+	for(int i = 0; i < M; i++) {
+		cout << "\t" << i;
+	}
+	cout << endl;
+	for(int i = 0; i < T; i++) {
+		for(int j = 0; j < M; j++) {
+			cout << "\t" << demands[i][j];
+		}
+		cout << endl;
 	}
 
 //INITIALIZE TRANSPORT_COST MATRIX
@@ -158,7 +207,7 @@ int main () {
 		}
 	}
 
-	cout << "Transportation Costs: (between microgrid i and microgrid j)" << endl;
+	cout << "Transportation Costs: (between microgrid i and microgrid j)" << endl; //printing out transport costs
 	for(int i = 0; i < M+1; i++) {
 		for(int j = 0; j < M+1; j++) {
 			cout << "\t" << transportCost[i][j];
@@ -196,13 +245,14 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	for(int i = 0; i < M; i++) {
 		for(int j = 0; j <= 100; j+=25) {
 			if(j-100 == 0) dpCUBE[0][i][j/25] = 0;
-			else dpCUBE[0][i][j/25] = 1000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
+			else dpCUBE[0][i][j/25] = 10000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
 		}
 	}
 	
 	path P;
-	cheapestPathDP(T, M, P, transportCost, dpCUBE);
+	cheapestPathDP(T, M, P, transportCost, dpCUBE, demands); //actually run algorithm
 
+	//PRINT PATH
 	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = P.micros.size() - 1; i >= 0; i--) {
 		cout << "day " << P.micros.size() - i - 1 << '\t' << "| microgrid " << P.micros[i] << '\t' << //state is battery state after usage on day i
