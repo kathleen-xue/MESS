@@ -14,14 +14,13 @@
 using namespace std;
 
 //TO DO:
-//change demands to be not affected by previous day's demand
-
-//compare to simpler heuristic (simple greedy algorithm)
 
 //DONE:
 //edit path visualisation (add start state, whether battery arrived at charging station)
 //each day, generate a new set of demands for each microgrid
 //demand of microgrid i on day2 can only be affected by batteries on microgrid i on day2
+//change demands to be not affected by previous day's demand
+//compare to simpler heuristic (simple greedy algorithm)
 
 struct path {
 	vector<pair<int, int> > states; //battery states: path.states[i].first = start state, path.states[i].second = end state
