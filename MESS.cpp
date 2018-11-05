@@ -57,6 +57,27 @@ int costToStay(int M, int T, int end, int start, vector<vector<int> > demands) {
 }
 
 
+/*path greedy(int T, int M, vector<vector<long long> > transportCost, vector<vector<int> >& demands) { //simple greedy algo
+	path P;
+	for(int i = 0; i <= T; i++) { //initialize path
+		P.states.push_back(make_pair(0,0));
+		P.micros.push_back(0);
+		P.costs.push_back(0);
+	}
+
+	P.states[0] = make_pair(0, 100); //at day 0, can charge from 0 to 100 for free
+
+	for(int i = 1; i <= T; i++) {
+		int minCost = INT_MAX;
+		for(int j = 0; j < M; j++) {
+			for(int k = 0; k <= 4; k++) {
+
+			}
+		}
+	}
+}*/
+
+
 void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE, vector<vector<int> >& demands) {
 //This function finds the maximum reduction of cost for a battery to
 //end up at any microgrid at any charge state on day T. If we iterate 
@@ -68,35 +89,34 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 	int startState = 0;
 	int endState = 0;
 	for(int i = 1; i <= T; i++) { //cycling through each day
-		pair<int, int> micro;
 		for(int j = 0; j < M; j++) { //cycling through the microgrids of current day
 			for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
-				for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
-					for(int n = m; n <= 100; n+=25) { //cycling through each of the *possible* charges of current day
-						for(int k = n; k >= 0; k-=25) { //cycling through each of the charge states of each microgrid of current day
+				for(int m = 0; m <= 4; m++) { //cycling through each of the charge states of previous day
+					for(int n = m; n <= 4; n++) { //cycling through each of the *possible* charges of current day
+						for(int k = n; k >= 0; k--) { //cycling through each of the charge states of each microgrid of current day
 							if(n != m) {
-								long long curr = dpCUBE[i-1][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k, n, demands);
-								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
-								if(dpCUBE[i][j][k/25] == curr) {
-									startState = n;
-									endState = k;
+								long long curr = dpCUBE[i-1][l][m] + costToCharge(m*25, n*25) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k*25, n*25, demands);
+								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], curr);
+								if(dpCUBE[i][j][k] == curr) {
+									startState = n*25;
+									endState = k*25;
 								}
 							}
 							else { 
-								long long curr = dpCUBE[i-1][l][m/25] + transportCost[j][l] + costToStay(j, i, k, n, demands);
-								dpCUBE[i][j][k/25] = min(dpCUBE[i][j][k/25], curr);
-								if(dpCUBE[i][j][k/25] == curr) {
-									startState = n;
-									endState = k;
+								long long curr = dpCUBE[i-1][l][m] + transportCost[j][l] + costToStay(j, i, k*25, n*25, demands);
+								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], curr);
+								if(dpCUBE[i][j][k] == curr) {
+									startState = n*25;
+									endState = k*25;
 								}
 							}
 						}
 					}
 				}
 			}
-			int margDecrease = demands[i-1][j] - sqrt(demands[i-1][j] - abs(startState - endState));
-			cout << "margDecrease: " << margDecrease << endl;
-			demands[i-1][j] = max(margDecrease, 0);
+			//int margDecrease = demands[i-1][j] - sqrt(demands[i-1][j] - abs(startState - endState));
+			//cout << "margDecrease: " << margDecrease << endl;
+			//demands[i-1][j] = max(margDecrease, 0);
 		}
 	}
 
@@ -120,6 +140,7 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 			}
 		}
 	}
+	P.costs[0] = minimum;
 	//path.push_back(make_pair(micro, minimum));
 
 	for (int i = T - 1; i >= 0; i--) {
@@ -128,27 +149,27 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 		int j = P.micros[i_ - 1];
 		int k = P.states[i_ - 1].first;
 		for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
-			for(int m = 0; m <= 100; m+=25) { //cycling through each of the charge states of previous day
-				for(int n = k; n <= 100; n+=25) { // cycling from charge state = end state, until charge state = 100
+			for(int m = 0; m <= 4; m++) { //cycling through each of the charge states of previous day
+				for(int n = k; n <= 4; n++) { // cycling from charge state = end state, until charge state = 100
 					if (found) continue;
 					long long curr = 0;
 					if(n != m) {
-						curr = dpCUBE[i][l][m/25] + costToCharge(m, n) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i+1, k, n, demands);
+						curr = dpCUBE[i][l][m] + costToCharge(m*25, n*25) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i+1, k, n*25, demands);
 					}
 					else { 
-						curr = dpCUBE[i][l][m/25] + transportCost[j][l] + costToStay(j, i+1, k, n, demands);
+						curr = dpCUBE[i][l][m] + transportCost[j][l] + costToStay(j, i+1, k, n*25, demands);
 					}
 					if (curr == minimum) { //we found microgrid and battery state causing largest negative cost
-						minimum = dpCUBE[i][l][m/25];
+						minimum = dpCUBE[i][l][m];
 						found = true;
 						P.micros[i_] = l;
-						P.states[i_].second = m;
-						P.states[i_-1].first = n;
+						P.states[i_].second = m*25;
+						P.states[i_-1].first = n*25;
 						P.costs[i_] = minimum;
 						//micro.first = l;
 						//micro.second = m;
-						//int margDecrease = demands[i_-1][j] - sqrt(demands[i_-1][j] - abs(P.states[i_-1].first - P.states[i_-1].second));
-						//demands[i_-1][j] = max(margDecrease, 0);
+						int margDecrease = demands[i][j] - sqrt(demands[i][j] - abs(P.states[i_-1].first - P.states[i_-1].second));
+						demands[i][j] = max(margDecrease, 0);
 						//demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
 					}
 				}
@@ -224,7 +245,7 @@ int main () {
 		for(int j = 0; j < M; j++) {
 			vector<long long> curr2;
 			for(int k = 0; k <= 100; k+=25) {
-				curr2.push_back(1000000);
+				curr2.push_back(10000000);
 				//cout << curr2[k/25] << " ";
 			}
 			//cout << endl;
@@ -238,7 +259,7 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
 		for (int j = 0; j < M; j++) {
 			for (int l = 0; l <= 100; l += 25) {
-				dpCUBE[i][j][l/25] = 1000000;
+				dpCUBE[i][j][l/25] = 10000000;
 			}
 		}
 	}
