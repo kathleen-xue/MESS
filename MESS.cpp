@@ -199,7 +199,7 @@ int main () {
 
 //INITIALIZE DEMAND MATRIX
 	vector<vector<int> > demands = createDemands(M, T); //create demands matrix
-	cout << "Matrix Demands: (starting demand of matrix j at day i)" << endl;
+	cout << "Demands Matrix: (starting demand of microgrid j at day i)" << endl;
 	cout << "mGrid ";
 	for(int i = 0; i < M; i++) {
 		cout << "\t" << i;
