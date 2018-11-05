@@ -50,8 +50,9 @@ int costToCharge(int start, int end) {
 int costToStay(int M, int T, int end, int start, vector<vector<int> > demands) { //at each microgrid compute total number of batteries that arrived and the amount of benefit they created total
 	//return -1 * sqrt(start - end) * 10;
 	int d = demands[T-1][M];
-	double diff = d - (start - end)*0.5;
-	return -1 * sqrt(d) * ((d - max(diff, 0.0))*3); //created a map of microgrid demands because previous costToStay function assumed 
+	double diff = d - abs(start - end)*0.5;
+	//cout << "costToStay: " << -1 * sqrt(d) * ((d - max(diff, 0.0))*3) << endl;
+	return -1 * sqrt(d) * abs((d - max(diff, 0.0))*3); //created a map of microgrid demands because previous costToStay function assumed 
 															 //demands didn't exist and caused batteries to stay at one microgrid throughout 
 															 //duration of days
 }
@@ -79,18 +80,23 @@ path greedy(int T, int M, vector<vector<long long> > transportCost, vector<vecto
 		for(int j = 0; j < M; j++) {
 			for(int k = (P.states[i-1].second)/25; k <= 4; k++) {
 				for(int l = k; l >= 0; l--) {
-					int curr = costToCharge((P.states[i-1].second)/25, k*25) + transportCost[P.micros[i-1]][M] + transportCost[M][j] + costToStay(j, i, k*25, l*25, demands);
+					int curr = costToCharge((P.states[i-1].second), k*25) + transportCost[P.micros[i-1]][M] + transportCost[M][j] + costToStay(j, i, k*25, l*25, demands) + P.costs[i-1];
 					if(curr < minCost) {
 						minCost = curr;
 						P.micros[i] = j;
 						P.costs[i] = curr;
 						P.states[i] = make_pair(k*25, l*25);
+						//cout << "microgrid: " << P.micros[i] << " cost: " << P.costs[i] << " start %: " << P.states[i].first << " end %: " << P.states[i].second << endl;
+						//cout << "minCost: " << minCost << endl;
 					}
 				}
 			}
-			int margDecrease = demands[i-1][j] - sqrt(demands[i-1][j] - abs(P.states[i].first - P.states[i].second));
-			demands[i-1][j] = max(margDecrease, 0);
 		}
+	}
+
+	for(int i = 1; i <= T; i++) {
+		int margDecrease = demands[i-1][P.micros[i]] - sqrt(demands[i-1][P.micros[i]] - abs(P.states[i].first - P.states[i].second));
+		demands[i-1][P.micros[i]] = max(margDecrease, 0);
 	}
 
 	return P;
@@ -275,6 +281,7 @@ int main () {
 	}
 
 //RUN ALGORITHM
+long long DPtotalCost = 0;
 for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
 		for (int j = 0; j < M; j++) {
@@ -302,10 +309,13 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 		if(i > 0 && P.states[i].first > P.states[i-1].second) cout << "| charged ";
 		cout << endl;
 	}
+	DPtotalCost += P.costs[0];
 
 }
-	path greed = greedy(T, M, transportCost, demandsGreed);
+	
+	long long totalCost = 0;
 	for(int k = 0; k < numBatteries; k++) {
+		path greed = greedy(T, M, transportCost, demandsGreed);
 		cout << "SIMPLE GREEDY ALGORITHM minimum cost path for battery " << k+1 << ": " << endl;
 		for(int l = 0; l < greed.micros.size(); l++) {
 			cout << "day " << l << '\t' << "| microgrid " << greed.micros[l] << '\t' << "| start %: " << greed.states[l].first <<
@@ -313,7 +323,11 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 			if(l > 0 && greed.states[l].first > greed.states[l-1].second) cout << "| charged ";
 			cout << endl;
 		}
+		totalCost += greed.costs[T];
 	}
+	cout << endl;
+	cout << "MESS ALGORITHM TOTAL COST: \t" << DPtotalCost << endl;
+	cout << "GREEDY ALGORITHM TOTAL COST: \t" << totalCost << endl;
 	
 
 	return 0;
