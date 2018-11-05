@@ -57,7 +57,7 @@ int costToStay(int M, int T, int end, int start, vector<vector<int> > demands) {
 }
 
 
-/*path greedy(int T, int M, vector<vector<long long> > transportCost, vector<vector<int> >& demands) { //simple greedy algo
+path greedy(int T, int M, vector<vector<long long> > transportCost, vector<vector<int> >& demands) { //simple greedy algo
 	path P;
 	for(int i = 0; i <= T; i++) { //initialize path
 		P.states.push_back(make_pair(0,0));
@@ -66,16 +66,35 @@ int costToStay(int M, int T, int end, int start, vector<vector<int> > demands) {
 	}
 
 	P.states[0] = make_pair(0, 100); //at day 0, can charge from 0 to 100 for free
+	int maxDemand = 0;
+	for(int i = 0; i < M; i++) {
+		if(demands[0][i] > maxDemand) {
+			maxDemand = demands[0][i];
+			P.micros[0] = i;
+		}
+	}
 
 	for(int i = 1; i <= T; i++) {
 		int minCost = INT_MAX;
 		for(int j = 0; j < M; j++) {
-			for(int k = 0; k <= 4; k++) {
-
+			for(int k = (P.states[i-1].second)/25; k <= 4; k++) {
+				for(int l = k; l >= 0; l--) {
+					int curr = costToCharge((P.states[i-1].second)/25, k*25) + transportCost[P.micros[i-1]][M] + transportCost[M][j] + costToStay(j, i, k*25, l*25, demands);
+					if(curr < minCost) {
+						minCost = curr;
+						P.micros[i] = j;
+						P.costs[i] = curr;
+						P.states[i] = make_pair(k*25, l*25);
+					}
+				}
 			}
+			int margDecrease = demands[i-1][j] - sqrt(demands[i-1][j] - abs(P.states[i].first - P.states[i].second));
+			demands[i-1][j] = max(margDecrease, 0);
 		}
 	}
-}*/
+
+	return P;
+}
 
 
 void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportCost, vector<vector<vector<long long> > >& dpCUBE, vector<vector<int> >& demands) {
@@ -132,11 +151,11 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 	//P.states[0].first = 0;
 
 	for (int j = 0; j < M; j++) {
-		for (int k = 0; k <= 100; k+=25) {
-			if (dpCUBE[T][j][k / 25] < minimum) { //finding first path node (from day T)
+		for (int k = 0; k <= 4; k++) {
+			if (dpCUBE[T][j][k] < minimum) { //finding first path node (from day T)
 				P.micros[0] = j; // microgrid causing largest negative cost
-				P.states[0].first = k; // battery state causing largest negative cost
-				minimum = dpCUBE[T][j][k / 25];
+				P.states[0].first = k*25; // battery state causing largest negative cost
+				minimum = dpCUBE[T][j][k];
 			}
 		}
 	}
@@ -199,6 +218,7 @@ int main () {
 
 //INITIALIZE DEMAND MATRIX
 	vector<vector<int> > demands = createDemands(M, T); //create demands matrix
+	vector<vector<int> > demandsGreed = demands;
 	cout << "Demands Matrix: (starting demand of microgrid j at day i)" << endl;
 	cout << "mGrid ";
 	for(int i = 0; i < M; i++) {
@@ -258,15 +278,15 @@ int main () {
 for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
 		for (int j = 0; j < M; j++) {
-			for (int l = 0; l <= 100; l += 25) {
-				dpCUBE[i][j][l/25] = 10000000;
+			for (int l = 0; l <= 4; l++) {
+				dpCUBE[i][j][l] = 10000000;
 			}
 		}
 	}
 	for(int i = 0; i < M; i++) {
-		for(int j = 0; j <= 100; j+=25) {
-			if(j-100 == 0) dpCUBE[0][i][j/25] = 0;
-			else dpCUBE[0][i][j/25] = 10000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
+		for(int j = 0; j <= 4; j++) {
+			if(j == 4) dpCUBE[0][i][j] = 0;
+			else dpCUBE[0][i][j] = 10000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
 		}
 	}
 	
@@ -274,7 +294,7 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 	cheapestPathDP(T, M, P, transportCost, dpCUBE, demands); //actually run algorithm
 
 	//PRINT PATH
-	cout << "Minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
+	cout << "MESS ALGORITHM minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
 	for(int i = P.micros.size() - 1; i >= 0; i--) {
 		cout << "day " << P.micros.size() - i - 1 << '\t' << "| microgrid " << P.micros[i] << '\t' << //state is battery state after usage on day i
 		"| start %: " << P.states[i].first << '\t' << "| end %: " << P.states[i].second << '\t' << 
@@ -282,7 +302,19 @@ for(int k = 0; k < numBatteries; k++) { //loops through the batteries
 		if(i > 0 && P.states[i].first > P.states[i-1].second) cout << "| charged ";
 		cout << endl;
 	}
+
 }
+	path greed = greedy(T, M, transportCost, demandsGreed);
+	for(int k = 0; k < numBatteries; k++) {
+		cout << "SIMPLE GREEDY ALGORITHM minimum cost path for battery " << k+1 << ": " << endl;
+		for(int l = 0; l < greed.micros.size(); l++) {
+			cout << "day " << l << '\t' << "| microgrid " << greed.micros[l] << '\t' << "| start %: " << greed.states[l].first <<
+			'\t' << "| end %: " << greed.states[l].second << '\t' << "| cost: " << greed.costs[l] << '\t';
+			if(l > 0 && greed.states[l].first > greed.states[l-1].second) cout << "| charged ";
+			cout << endl;
+		}
+	}
+	
 
 	return 0;
 }
