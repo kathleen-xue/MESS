@@ -23,7 +23,6 @@ for i in range(2,52,2):
 	x1.append(i) #DP
 	x2.append(i) #greedy
 
-
 avgM = []
 currAM = 0
 avgG = []
