@@ -34,8 +34,8 @@ if len(mess) == 1:
 
 elif len(mess) > 1:
 	for i in range(0,len(mess)):
-		plt.plot(x1, mess[i], color = 'xkcd:raspberry', alpha = 0.3)
-		plt.plot(x2, greed[i], color = 'xkcd:cobalt blue', alpha = 0.3)
+		plt.plot(x1, mess[i], color = 'xkcd:raspberry', alpha = 0.2)
+		plt.plot(x2, greed[i], color = 'xkcd:cobalt blue', alpha = 0.2)
 
 	for j in range(0,len(mess[0])):
 		for i in range(0,len(mess)):
@@ -46,8 +46,10 @@ elif len(mess) > 1:
 		avgM.append(currAM)
 		avgG.append(currAG)
 	
-	plt.plot(x1, avgM, color = 'xkcd:wine red', label = 'MESS algorithm')
-	plt.plot(x2, avgG, color = 'xkcd:royal blue', label = 'simple greedy algorithm')
+	plt.plot(x1, avgM, color = 'xkcd:wine red', label = 'MESS algorithm', alpha = 0.5)
+	plt.plot(np.unique(x1), np.poly1d(np.polyfit(x1, avgM, 1))(np.unique(x1)), color = 'xkcd:wine red')
+	plt.plot(np.unique(x2), np.poly1d(np.polyfit(x2, avgG, 1))(np.unique(x2)), color = 'xkcd:royal blue')
+	plt.plot(x2, avgG, color = 'xkcd:royal blue', label = 'simple greedy algorithm', alpha = 0.5)
 
 plt.xlabel('number of batteries')
 plt.ylabel('total net cost (cost + benefit)')
