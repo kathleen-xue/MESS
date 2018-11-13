@@ -11,8 +11,10 @@
 #include <map>
 #include <cstdlib>
 #include <iomanip>
+#include <ctime>
 using namespace std;
 
+//void srand(time(NULL));
 //TO DO:
 //benefit per microgrid per day (use same function, just total charge of all batteries)
 //total benefit - total cost
@@ -134,7 +136,7 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 					for(int n = m; n <= 4; n++) { //cycling through each of the *possible* charges of current day
 						for(int k = n; k >= 0; k--) { //cycling through each of the charge states of each microgrid of current day
 							if(n != m) {
-								long long curr = dpCUBE[i-1][l][m] + costToCharge(m*25, n*25) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i, k*25, n*25, demands);
+								long long curr = dpCUBE[i-1][l][m] + costToCharge(m*25, n*25) + transportCost[l][M] + transportCost[M][j] + costToStay(j, i, k*25, n*25, demands);
 								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], curr);
 								if(dpCUBE[i][j][k] == curr) {
 									startState = n*25;
@@ -142,7 +144,7 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 								}
 							}
 							else { 
-								long long curr = dpCUBE[i-1][l][m] + transportCost[j][l] + costToStay(j, i, k*25, n*25, demands);
+								long long curr = dpCUBE[i-1][l][m] + transportCost[l][j] + costToStay(j, i, k*25, n*25, demands);
 								dpCUBE[i][j][k] = min(dpCUBE[i][j][k], curr);
 								if(dpCUBE[i][j][k] == curr) {
 									startState = n*25;
@@ -174,53 +176,58 @@ void cheapestPathDP(int T, int M, path& P, vector<vector<long long> > transportC
 	for (int j = 0; j < M; j++) {
 		for (int k = 0; k <= 4; k++) {
 			if (dpCUBE[T][j][k] < minimum) { //finding first path node (from day T)
-				P.micros[0] = j; // microgrid causing largest negative cost
-				P.states[0].first = k*25; // battery state causing largest negative cost
+				P.micros[T] = j; // microgrid causing largest negative cost
+				P.states[T].second = k*25; // battery state causing largest negative cost
 				minimum = dpCUBE[T][j][k];
 			}
 		}
 	}
-	P.costs[0] = minimum;
+	P.costs[T] = minimum;
 	//path.push_back(make_pair(micro, minimum));
 
 	for (int i = T - 1; i >= 0; i--) {
-		int i_ = T - i;
 		bool found = false;
-		int j = P.micros[i_ - 1];
-		int k = P.states[i_ - 1].first;
+		int j = P.micros[i + 1];
+		int k = P.states[i + 1].second;
 		for(int l = 0; l < M; l++) { //cycling through each microgrid of previous day
 			for(int m = 0; m <= 4; m++) { //cycling through each of the charge states of previous day
-				for(int n = k; n <= 4; n++) { // cycling from charge state = end state, until charge state = 100
-					if (found) continue;
+				for(int n = 0; n <= 4; n++) { // cycling from charge state = end state, until charge state = 100
+					//if (found) continue;
 					int currneg = 0;
 					long long curr = 0;
 					if(n != m) {
-						curr = dpCUBE[i][l][m] + costToCharge(m*25, n*25) + transportCost[j][M] + transportCost[M][l] + costToStay(j, i+1, k, n*25, demands);
-						currneg = costToCharge(m*25, n*25) + transportCost[j][M] + transportCost[M][l];
+						curr = dpCUBE[i][l][m] + costToCharge(m*25, n*25) + transportCost[l][M] + transportCost[M][j] + costToStay(j, i+1, k, n*25, demands);
+						currneg = costToCharge(m*25, n*25) + transportCost[l][M] + transportCost[M][j];
 					}
 					else { 
-						curr = dpCUBE[i][l][m] + transportCost[j][l] + costToStay(j, i+1, k, n*25, demands);
+						curr = dpCUBE[i][l][m] + transportCost[l][j] + costToStay(j, i+1, k, n*25, demands);
 						currneg = transportCost[j][l];
 					}
 					if (curr == minimum) { //we found microgrid and battery state causing largest negative cost
 						minimum = dpCUBE[i][l][m];
 						found = true;
-						P.micros[i_] = l;
-						P.states[i_].second = m*25;
-						P.states[i_ - 1].first = n*25;
-						P.costs[i_] = minimum;
-						P.negs[i_] = currneg;
+						P.micros[i] = l;
+						P.states[i].second = m*25;
+						P.states[i + 1].first = n*25;
+						P.costs[i] = minimum;
+						P.negs[i] = currneg;
 						//micro.first = l;
 						//micro.second = m;
-						int margDecrease = demands[i][j] - 10*sqrt(demands[i][j] - abs(P.states[i_-1].first - P.states[i_-1].second));
-						//cout << sqrt(demands[i][j] - abs(P.states[i_-1].first - P.states[i_-1].second)) <<" " << margDecrease << endl;
-						demands[i][j] = max(margDecrease, 0);
 						//demand[make_pair(i+1, j)] = max(demand[make_pair(i+1, j)] - (n-k), 0); //we update the demand at microgrid j at day i+1
 					}
 				}
 			}
 		}
+		//cout << found << endl;
 		//path.push_back(make_pair(micro, minimum));
+	}
+
+
+	for (int i = 1; i <= T; i++) {
+		int j = P.micros[i];
+		int margDecrease = demands[i - 1][j] - 10*sqrt(demands[i - 1][j] - abs(P.states[i].first - P.states[i].second));
+		//cout << sqrt(demands[i][j] - abs(P.states[i_-1].first - P.states[i_-1].second)) <<" " << margDecrease << endl;
+		demands[i - 1][j] = max(margDecrease, 0);
 	}
 
 }
@@ -233,15 +240,18 @@ int main () {
 	int lowerBound = 0;
 	int upperBound = 0;
 	int increments = 0;
+	int numTrials = 0;
 	cout << "MENU: " << endl;
 	cout << "1 = Clear output file" << endl;
-	cout << "2 = Add input" << endl;
+	cout << "2 = Add input (debugging mode)" << endl;
 	cout << "3 = Add bulk input (multiple numbers of batteries)" << endl;
 	int userInput;
 	cin >> userInput;
 	if(userInput == 1) {
-		ofstream f("netBenefits.txt", ios::out | ios::trunc);
+		ofstream f("netBenefitsMESS.txt", ios::out | ios::trunc);
 		f.close();
+		ofstream g("netBenefitsGREEDY.txt", ios::out | ios::trunc);
+		g.close();
 		return 0;
 	}
 	else if(userInput == 2) {
@@ -256,6 +266,7 @@ int main () {
 				demand[make_pair(i, j)] = rand() % 200;
 			}
 		}*/
+		numTrials = 1;
 	}
 	else {
 		cout << "Enter lower bound of # batteries: " << endl;
@@ -268,6 +279,8 @@ int main () {
 		cin >> T;
 		cout << "Enter # microgrids: " << endl;
 		cin >> M;
+		cout << "Enter # trials: " << endl;
+		cin >> numTrials;
 	}
 
 	if(userInput == 2) {
@@ -277,185 +290,204 @@ int main () {
 	
 
 //INITIALIZE DEMAND MATRIX
-for(int z = lowerBound; z <= upperBound; z += increments) {
-	if(userInput == 3) numBatteries = z;
-	vector<vector<int> > demands = createDemands(M, T); //create demands matrix
-	vector<vector<int> > demandsGreed = demands;
-	vector<vector<int> > demandsMicro = demands;
-	cout << "Demands Matrix: (starting demand of microgrid j at day i)" << endl;
-	cout << "mGrid ";
-	for(int i = 0; i < M; i++) {
-		cout << "\t" << i;
-	}
-	cout << endl;
-	for(int i = 0; i < T; i++) {
-		for(int j = 0; j < M; j++) {
-			cout << "\t" << demands[i][j];
-		}
-		cout << endl;
-	}
-
-	//INITIALIZE TRANSPORT_COST MATRIX
-		vector<vector<long long> > transportCost(M+1, vector<long long>(M+1));
-
-		for(int i = 0; i < M+1; i++) {
-			for(int j = i; j < M+1; j++) {
-				if(i == j) transportCost[i][j] = 0;
-				else {
-					long long currRand = 0;
-					//if(i == M || j == M) currRand = (long long)((rand() % 3)) + 1;
-					currRand = (long long)((rand() % 600)); //experiment more with transportation cost
-					transportCost[i][j] = currRand;
-					transportCost[j][i] = currRand;
-				}
-			}
-		}
-
-		cout << "Transportation Costs: (between microgrid i and microgrid j)" << endl; //printing out transport costs
-		for(int i = 0; i < M+1; i++) {
-			for(int j = 0; j < M+1; j++) {
-				cout << "\t" << transportCost[i][j];
+	for(int trials = 1; trials <= numTrials; trials++) {
+		cout << "TRIAL " << trials << endl;
+		srand(trials);
+		for(int z = lowerBound; z <= upperBound; z += increments) {
+			if(userInput == 3) numBatteries = z;
+			vector<vector<int> > demands = createDemands(M, T); //create demands matrix
+			vector<vector<int> > demandsGreed = demands;
+			vector<vector<int> > demandsMicro = demands;
+			cout << "Demands Matrix: (starting demand of microgrid j at day i)" << endl;
+			cout << "mGrid ";
+			for(int i = 0; i < M; i++) {
+				cout << "\t" << i;
 			}
 			cout << endl;
-		}
-		cout << endl;
-
-	//INITIALIZE DP_CUBE
-		vector<vector<vector<long long> > > dpCUBE;
-
-		for(int i = 0; i <= T; i++) {
-			vector<vector<long long> > curr1; 
-			for(int j = 0; j < M; j++) {
-				vector<long long> curr2;
-				for(int k = 0; k <= 100; k+=25) {
-					curr2.push_back(10000000);
-					//cout << curr2[k/25] << " ";
+			for(int i = 0; i < T; i++) {
+				for(int j = 0; j < M; j++) {
+					cout << "\t" << demands[i][j];
 				}
-				//cout << endl;
-				curr1.push_back(curr2);
-			}
-			dpCUBE.push_back(curr1);
-		}
-
-	//RUN ALGORITHM
-	vector<vector<pair<int, int> > > microgridsDP;
-	for(int y = 0; y <= T; y++) {
-		vector<pair<int, int> > curr;
-		for(int x = 0; x < M; x++) {
-			curr.push_back(make_pair(0,0));
-		}
-		microgridsDP.push_back(curr);
-	}
-
-	vector<vector<pair<int, int> > > microgridsGreed;
-	for(int y = 0; y <= T; y++) {
-		vector<pair<int, int> > curr;
-		for(int x = 0; x < M; x++) {
-			curr.push_back(make_pair(0,0));
-		}
-		microgridsGreed.push_back(curr);
-	}
-
-	long long DPtotalCost = 0;
-	for(int k = 0; k < numBatteries; k++) { //loops through the batteries
-		for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
-			for (int j = 0; j < M; j++) {
-				for (int l = 0; l <= 4; l++) {
-					dpCUBE[i][j][l] = 10000000;
-				}
-			}
-		}
-		for(int i = 0; i < M; i++) {
-			for(int j = 0; j <= 4; j++) {
-				if(j == 4) dpCUBE[0][i][j] = 0;
-				else dpCUBE[0][i][j] = 10000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
-			}
-		}
-		
-		path P;
-		cheapestPathDP(T, M, P, transportCost, dpCUBE, demands); //actually run algorithm
-
-		//PRINT PATH
-		long long totalnegs = 0;
-		for(int i = 0; i < P.negs.size(); i++) {
-			totalnegs += P.negs[i];
-		}
-		cout << "MESS ALGORITHM minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
-		for(int i = T; i >= 0; i--) {
-			microgridsDP[i][P.micros[i]].first += P.states[i].first;
-			//cout << "DP start charge: " << microgridsDP[P.micros.size() - i - 1][P.micros[i]].first << endl;
-			microgridsDP[i][P.micros[i]].second += P.states[i].second;
-			cout << "day " << T - i << '\t' << "| microgrid " << P.micros[i] << '\t' << //state is battery state after usage on day i
-			"| start %: " << P.states[i].first << '\t' << "| end %: " << P.states[i].second << '\t' << 
-			"| cost: " << P.costs[i] << '\t'; //cost is the maximum negative cost accrued for smart grid per battery
-			if(i < T && P.states[i].first > P.states[i+1].second) cout << "| charged ";
-			cout << endl;
-		}
-			//DPtotalCost += P.costs[0];
-			DPtotalCost += totalnegs;
-
-	}
-
-		long long totalCost = 0;
-		for(int k = 0; k < numBatteries; k++) {
-			path greed = greedy(T, M, transportCost, demandsGreed);
-
-			long long totalnegs_g = 0;
-			for(int i = 0; i < greed.negs.size(); i++) {
-				totalnegs_g += greed.negs[i];
-			}
-
-			cout << "SIMPLE GREEDY ALGORITHM minimum cost path for battery " << k+1 << ": " << endl;
-			for(int l = 0; l <= T; l++) {
-				microgridsGreed[l][greed.micros[l]].first += greed.states[l].first;
-				microgridsGreed[l][greed.micros[l]].second += greed.states[l].second;
-				cout << "day " << l << '\t' << "| microgrid " << greed.micros[l] << '\t' << "| start %: " << greed.states[l].first <<
-				'\t' << "| end %: " << greed.states[l].second << '\t' << "| cost: " << greed.costs[l] << '\t';
-				if(l > 0 && greed.states[l].first > greed.states[l-1].second) cout << "| charged ";
 				cout << endl;
 			}
-			//totalCost += greed.costs[T];
-			totalCost += totalnegs_g;
-		}
 
-		long long MESStotalSum = 0;
-		long long GREEDYtotalSum = 0;
+			//INITIALIZE TRANSPORT_COST MATRIX
+				vector<vector<long long> > transportCost(M+1, vector<long long>(M+1));
 
-		cout << "MESS BENEFIT PER MICROGRID: " << endl;
-		for(int t = 0; t < T; t++) {
-			cout << "Day " << t << endl;
-			for(int x = 0; x < M; x++) {
-				int ans = costToStay(x, t+1, microgridsDP[t][x].second, microgridsDP[t][x].first, demandsMicro);
-				//cout << ans << endl;
-				cout << "Microgrid ";
-				cout << x << ": " << ans << endl;
-				MESStotalSum += ans;
+				for(int i = 0; i < M+1; i++) {
+					for(int j = i; j < M+1; j++) {
+						if(i == j) transportCost[i][j] = 0;
+						else {
+							long long currRand = 0;
+							//if(i == M || j == M) currRand = (long long)((rand() % 3)) + 1;
+							currRand = (long long)((rand() % 600)); //experiment more with transportation cost
+							transportCost[i][j] = currRand;
+							transportCost[j][i] = currRand;
+						}
+					}
+				}
+
+				cout << "Transportation Costs: (between microgrid i and microgrid j)" << endl; //printing out transport costs
+				for(int i = 0; i < M+1; i++) {
+					for(int j = 0; j < M+1; j++) {
+						cout << "\t" << transportCost[i][j];
+					}
+					cout << endl;
+				}
+				cout << endl;
+
+			//INITIALIZE DP_CUBE
+				vector<vector<vector<long long> > > dpCUBE;
+
+				for(int i = 0; i <= T; i++) {
+					vector<vector<long long> > curr1; 
+					for(int j = 0; j < M; j++) {
+						vector<long long> curr2;
+						for(int k = 0; k <= 100; k+=25) {
+							curr2.push_back(10000000);
+							//cout << curr2[k/25] << " ";
+						}
+						//cout << endl;
+						curr1.push_back(curr2);
+					}
+					dpCUBE.push_back(curr1);
+				}
+
+			//RUN ALGORITHM
+			vector<vector<pair<int, int> > > microgridsDP;
+			for(int y = 0; y <= T; y++) {
+				vector<pair<int, int> > curr;
+				for(int x = 0; x < M; x++) {
+					curr.push_back(make_pair(0,0));
+				}
+				microgridsDP.push_back(curr);
 			}
-		}
 
-		cout << endl;
-
-		cout << "GREEDY BENEFIT PER MICROGRID: " << endl;
-		for(int t = 0; t < T; t++) {
-			cout << "Day " << t << endl;
-			for(int x = 0; x < M; x++) {
-				int ans = costToStay(x, t+1, microgridsGreed[t][x].second, microgridsGreed[t][x].first, demandsMicro);
-				cout << "Microgrid " << x << ": " << ans << endl;
-				GREEDYtotalSum += ans;
+			vector<vector<pair<int, int> > > microgridsGreed;
+			for(int y = 0; y <= T; y++) {
+				vector<pair<int, int> > curr;
+				for(int x = 0; x < M; x++) {
+					curr.push_back(make_pair(0,0));
+				}
+				microgridsGreed.push_back(curr);
 			}
+
+			long long DPtotalCost = 0;
+			for(int k = 0; k < numBatteries; k++) { //loops through the batteries
+				for (int i = 1; i <= T; i++) { //reinitialize dpCUBE
+					for (int j = 0; j < M; j++) {
+						for (int l = 0; l <= 4; l++) {
+							dpCUBE[i][j][l] = 10000000;
+						}
+					}
+				}
+				for(int i = 0; i < M; i++) {
+					for(int j = 0; j <= 4; j++) {
+						if(j == 4) dpCUBE[0][i][j] = 0;
+						else dpCUBE[0][i][j] = 10000000; //at day 0, battery can be at 100% at any microgrid at 0 cost
+					}
+				}
+				
+				path P;
+				cheapestPathDP(T, M, P, transportCost, dpCUBE, demands); //actually run algorithm
+
+				//PRINT PATH
+				long long totalnegs = 0;
+				for(int i = 0; i < P.negs.size(); i++) {
+					totalnegs += P.negs[i];
+				}
+				if(userInput == 2) cout << "MESS ALGORITHM minimum cost path for battery " << k+1 << ": " << endl; //outputs min cost path for each battery in standard output
+				for(int i = T; i >= 0; i--) {
+					microgridsDP[i][P.micros[i]].first += P.states[i].first;
+					//cout << "DP start charge: " << microgridsDP[P.micros.size() - i - 1][P.micros[i]].first << endl;
+					microgridsDP[i][P.micros[i]].second += P.states[i].second;
+					if(userInput == 2) {
+						cout << "day " << T - i << '\t' << "| microgrid " << P.micros[T - i] << '\t' << //state is battery state after usage on day i
+						"| start %: " << P.states[T - i].first << '\t' << "| end %: " << P.states[T - i].second << '\t' << 
+						"| cost: " << P.costs[T - i] << '\t'; //cost is the maximum negative cost accrued for smart grid per battery
+						if(i < T && P.states[T - i].first > P.states[T - i - 1].second) cout << "| charged ";
+						cout << endl;
+					}
+				}
+					//DPtotalCost += P.costs[0];
+					DPtotalCost += totalnegs;
+
+			}
+
+			long long totalCost = 0;
+			for(int k = 0; k < numBatteries; k++) {
+				path greed = greedy(T, M, transportCost, demandsGreed);
+
+				long long totalnegs_g = 0;
+				for(int i = 0; i < greed.negs.size(); i++) {
+					totalnegs_g += greed.negs[i];
+				}
+
+				if(userInput == 2) cout << "SIMPLE GREEDY ALGORITHM minimum cost path for battery " << k+1 << ": " << endl;
+				for(int l = 0; l <= T; l++) {
+					microgridsGreed[l][greed.micros[l]].first += greed.states[l].first;
+					microgridsGreed[l][greed.micros[l]].second += greed.states[l].second;
+					if(userInput == 2) {
+						cout << "day " << l << '\t' << "| microgrid " << greed.micros[l] << '\t' << "| start %: " << greed.states[l].first <<
+						'\t' << "| end %: " << greed.states[l].second << '\t' << "| cost: " << greed.costs[l] << '\t';
+						if(l > 0 && greed.states[l].first > greed.states[l-1].second) cout << "| charged ";
+						cout << endl;
+					}
+				}
+				//totalCost += greed.costs[T];
+				totalCost += totalnegs_g;
+			}
+
+			long long MESStotalSum = 0;
+			long long GREEDYtotalSum = 0;
+
+			if(userInput == 2) cout << "MESS BENEFIT PER MICROGRID: " << endl;
+			for(int t = 0; t < T; t++) {
+				if(userInput == 2) cout << "Day " << t << endl;
+				for(int x = 0; x < M; x++) {
+					int ans = costToStay(x, t+1, microgridsDP[t][x].second, microgridsDP[t][x].first, demandsMicro);
+					if(userInput == 2) {
+						cout << "Microgrid ";
+						cout << x << ": " << ans << endl;
+					}
+					//cout << ans << endl;
+					MESStotalSum += ans;
+				}
+			}
+
+			cout << endl;
+
+			if(userInput == 2) cout << "GREEDY BENEFIT PER MICROGRID: " << endl;
+			for(int t = 0; t < T; t++) {
+				if(userInput == 2) cout << "Day " << t << endl;
+				for(int x = 0; x < M; x++) {
+					int ans = costToStay(x, t+1, microgridsGreed[t][x].second, microgridsGreed[t][x].first, demandsMicro);
+					if(userInput == 2) cout << "Microgrid " << x << ": " << ans << endl;
+					GREEDYtotalSum += ans;
+				}
+			}
+			cout << endl;
+
+			cout << "MESS TOTAL NET BENEFIT: " << MESStotalSum + DPtotalCost << endl;
+			cout << "GREEDY TOTAL NET BENEFIT: " << GREEDYtotalSum + totalCost << endl;
+			cout << endl;
+			cout << "MESS ALGORITHM TOTAL COST: \t" << DPtotalCost << endl;
+			cout << "GREEDY ALGORITHM TOTAL COST: \t" << totalCost << endl;
+			
+			ofstream messfile("netBenefitsMESS.txt", ios_base::app | ios_base::out);
+			messfile << (MESStotalSum + DPtotalCost) << " ";
+			ofstream gfile("netBenefitsGREEDY.txt", ios_base::app | ios_base::out);
+			gfile << (GREEDYtotalSum + totalCost) << " ";
+			messfile.close();
+			gfile.close();
+
 		}
-		cout << endl;
-
-		cout << "MESS TOTAL NET BENEFIT: " << MESStotalSum + DPtotalCost << endl;
-		cout << "GREEDY TOTAL NET BENEFIT: " << GREEDYtotalSum + totalCost << endl;
-		cout << endl;
-		cout << "MESS ALGORITHM TOTAL COST: \t" << DPtotalCost << endl;
-		cout << "GREEDY ALGORITHM TOTAL COST: \t" << totalCost << endl;
-		
-		ofstream myfile("netBenefits.txt", ios_base::app | ios_base::out);
-		myfile << (MESStotalSum + DPtotalCost) << " " << (GREEDYtotalSum + totalCost) << "\n";
-		myfile.close();
-
+		ofstream messfile("netBenefitsMESS.txt", ios_base::app | ios_base::out);
+		messfile << "\n";
+		ofstream gfile("netBenefitsGREEDY.txt", ios_base::app | ios_base::out);
+		gfile << "\n";
+		messfile.close();
+		gfile.close();
 	}
 	
 	return 0;
